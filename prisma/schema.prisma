@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LEAVE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(EMPLOYEE)
+  name      String
+  phone     String?
+
+  creatorId String?  @map("creator_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // self relation (admin tạo user)
+  creator      User?  @relation("UserCreator", fields: [creatorId], references: [id])
+  createdUsers User[] @relation("UserCreator")
+
+  // leave
+  leaveRequests   LeaveRequest[] @relation("UserLeaveRequests")
+  processedLeaves LeaveRequest[] @relation("LeaveProcessedBy")
+
+  // attendance
+  attendances Attendance[]
+
+  @@map("users")
+}
+
+model LeaveRequest {
+  id        String      @id @default(uuid())
+  userId    String      @map("user_id")
+
+  fromDate  DateTime    @map("from_date") @db.Date
+  toDate    DateTime    @map("to_date") @db.Date
+
+  startTime DateTime?   @map("start_time") @db.Time
+  endTime   DateTime?   @map("end_time") @db.Time
+
+  isFullDay Boolean     @default(true) @map("is_full_day")
+  reason    String?
+
+  status    LeaveStatus @default(PENDING)
+
+  // approve / reject
+  processedById String? @map("processed_by_id")
+  processedBy   User?   @relation("LeaveProcessedBy", fields: [processedById], references: [id])
+
+  processedAt   DateTime? @map("processed_at")
+
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  deletedAt DateTime?   @map("deleted_at")
+
+  // employee tạo request
+  user User @relation("UserLeaveRequests", fields: [userId], references: [id])
+
+  @@map("leave_requests")
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  date      DateTime @db.Date
+
+  // multi session
+  sessions AttendanceSession[]
+
+  totalHours Float?  @map("total_hours")
+  status     AttendanceStatus @default(PRESENT)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@map("attendances")
+}
+
+model AttendanceSession {
+  id           String   @id @default(uuid())
+  attendanceId String   @map("attendance_id")
+
+  checkinTime  DateTime @map("checkin_time")
+  checkoutTime DateTime? @map("checkout_time")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id])
+
+  @@map("attendance_sessions")
+}
