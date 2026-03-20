@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { Roles } from '../../global/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('users')
 export class UsersController {
@@ -17,6 +18,13 @@ export class UsersController {
   getMe(@Req() req: Request) {
     const userId = (req as any).user.id;
     return this.usersService.getMe(userId);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  updateMe(@Req() req: Request, @Body() dto: UpdateProfileDto) {
+    const userId = (req as any).user.id;
+    return this.usersService.updateMe(userId, dto);
   }
 
   @Post('employees')

@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -43,6 +44,25 @@ export class UsersService {
 
     return user;
   }
+
+  async updateMe(userId: string, dto: UpdateProfileDto) {
+    const { password, ...rest } = dto;
+
+    const data: Record<string, any> = { ...rest };
+
+    if (password) {
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      omit: { password: true },
+    });
+
+    return updated;
+  }
+
   async getEmployees(query: PaginationQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
