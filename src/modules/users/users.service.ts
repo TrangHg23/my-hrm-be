@@ -90,4 +90,45 @@ export class UsersService {
       },
     };
   }
+
+  async getEmployeeById(employeeId: string) {
+    const employee = await this.prisma.user.findUnique({
+      where: { id: employeeId, role: 'EMPLOYEE' },
+      omit: { password: true },
+    });
+
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    return employee;
+  }
+
+  async updateEmployee(employeeId: string, dto: import('./dto/update-employee.dto').UpdateEmployeeDto) {
+    const dtoAny = dto as any;
+    const { password, ...rest } = dtoAny;
+    const data: Record<string, any> = { ...rest };
+
+    if (password) {
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    if (dtoAny.email) {
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dtoAny.email },
+      });
+      if (existing && existing.id !== employeeId) {
+        throw new ConflictException('Email already exists');
+      }
+    }
+
+    try {
+      const updated = await this.prisma.user.update({
+        where: { id: employeeId, role: 'EMPLOYEE' },
+        data,
+        omit: { password: true },
+      });
+      return updated;
+    } catch (e) {
+      throw new NotFoundException('Employee not found');
+    }
+  }
 }
