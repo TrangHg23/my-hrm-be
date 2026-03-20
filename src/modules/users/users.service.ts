@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -33,6 +33,16 @@ export class UsersService {
     return result;
   }
 
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      omit: { password: true },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return user;
+  }
   async getEmployees(query: PaginationQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;

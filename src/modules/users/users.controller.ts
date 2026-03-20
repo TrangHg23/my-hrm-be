@@ -12,6 +12,13 @@ import { PaginationQueryDto } from './dto/pagination-query.dto';
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMe(@Req() req: Request) {
+    const userId = (req as any).user.id;
+    return this.usersService.getMe(userId);
+  }
+
   @Post('employees')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

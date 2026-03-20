@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -18,11 +18,5 @@ export class AuthController {
   logout(@Req() req: Request) {
     const token = req.headers.authorization!.split(' ')[1];
     return this.authService.logout(token);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  getMe(@Req() req: Request) {
-    return (req as any).user;
   }
 }
