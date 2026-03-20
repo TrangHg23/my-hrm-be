@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -111,4 +112,11 @@ model AttendanceSession {
   attendance Attendance @relation(fields: [attendanceId], references: [id])
 
   @@map("attendance_sessions")
+}
+
+model BlacklistedToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
