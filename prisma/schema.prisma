@@ -104,8 +104,8 @@ model AttendanceSession {
   id           String   @id @default(uuid())
   attendanceId String   @map("attendance_id")
 
-  checkinTime  DateTime @map("checkin_time")
-  checkoutTime DateTime? @map("checkout_time")
+  checkinTime  DateTime @map("checkin_time") @db.Timestamptz
+  checkoutTime DateTime? @map("checkout_time") @db.Timestamptz
 
   createdAt    DateTime @default(now()) @map("created_at")
 
