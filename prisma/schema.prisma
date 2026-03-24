@@ -83,7 +83,7 @@ model LeaveRequest {
 model Attendance {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  date      DateTime @db.Date
+  date      DateTime @db.Timestamptz
 
   // multi session
   sessions AttendanceSession[]
@@ -97,6 +97,7 @@ model Attendance {
   user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, date])
+  @@index([userId, date])
   @@map("attendances")
 }
 
