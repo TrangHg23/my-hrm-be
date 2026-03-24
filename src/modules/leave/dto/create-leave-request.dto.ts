@@ -24,10 +24,8 @@ class LeaveRequestValidator implements ValidatorConstraintInterface {
       return false;
     }
 
-    // 2. fullDay must NOT have time
-    if (o.isFullDay && (o.startTime || o.endTime)) {
-      return false;
-    }
+    // 2. fullDay rules (no strict time exclusion here anymore)
+    // The service will ignore startTime/endTime if it's a full day
 
     // 3. partial day rules
     if (!o.isFullDay) {
