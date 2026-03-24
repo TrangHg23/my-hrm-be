@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -102,7 +106,10 @@ export class UsersService {
     return employee;
   }
 
-  async updateEmployee(employeeId: string, dto: import('./dto/update-employee.dto').UpdateEmployeeDto) {
+  async updateEmployee(
+    employeeId: string,
+    dto: import('./dto/update-employee.dto').UpdateEmployeeDto,
+  ) {
     const dtoAny = dto as any;
     const { password, ...rest } = dtoAny;
     const data: Record<string, any> = { ...rest };

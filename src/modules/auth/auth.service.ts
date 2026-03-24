@@ -41,15 +41,15 @@ export class AuthService {
   }
 
   async logout(token: string) {
-  const decoded = this.jwtService.decode(token) as { exp: number };
+    const decoded = this.jwtService.decode(token);
 
-  await this.prisma.blacklistedToken.create({
-    data: {
-      token,
-      expiresAt: new Date(decoded.exp * 1000),
-    },
-  });
+    await this.prisma.blacklistedToken.create({
+      data: {
+        token,
+        expiresAt: new Date(decoded.exp * 1000),
+      },
+    });
 
-  return { message: 'Logged out successfully' };
-}
+    return { message: 'Logged out successfully' };
+  }
 }

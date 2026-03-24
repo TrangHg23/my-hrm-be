@@ -7,6 +7,13 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { MyAttendanceQueryDto } from './dto/my-attendance-query.dto';
 import { AttendanceStatus } from '@prisma/client';
+import { VIETNAM_TIMEZONE } from './attendance.constants';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 @Injectable()
 export class AttendanceService {
@@ -16,8 +23,7 @@ export class AttendanceService {
 
   async checkIn(userId: string) {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const { start: todayStart, end: todayEnd } = this.getVNTodayRange();
 
     // Find or create today's attendance record
     let attendance = await this.prisma.attendance.findFirst({
@@ -60,8 +66,7 @@ export class AttendanceService {
 
   async checkOut(userId: string) {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const { start: todayStart, end: todayEnd } = this.getVNTodayRange();
 
     const attendance = await this.prisma.attendance.findFirst({
       where: {
@@ -72,17 +77,22 @@ export class AttendanceService {
     });
 
     if (!attendance) {
-      throw new NotFoundException('Không tìm thấy bản ghi chấm công hôm nay. Vui lòng check-in trước.');
+      throw new NotFoundException(
+        'Không tìm thấy bản ghi chấm công hôm nay. Vui lòng check-in trước.',
+      );
     }
 
     const openSession = attendance.sessions.find((s) => !s.checkoutTime);
 
     if (!openSession) {
-      throw new BadRequestException('Không có ca làm việc nào đang mở. Vui lòng check-in trước.');
+      throw new BadRequestException(
+        'Không có ca làm việc nào đang mở. Vui lòng check-in trước.',
+      );
     }
 
     // Validate min 30 minutes
-    const minutesDiff = (now.getTime() - openSession.checkinTime.getTime()) / 60000;
+    const minutesDiff =
+      (now.getTime() - openSession.checkinTime.getTime()) / 60000;
     if (minutesDiff < 30) {
       const remaining = Math.ceil(30 - minutesDiff);
       throw new BadRequestException(
@@ -122,8 +132,7 @@ export class AttendanceService {
 
   async punch(userId: string) {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const { start: todayStart, end: todayEnd } = this.getVNTodayRange();
 
     const attendance = await this.prisma.attendance.findFirst({
       where: { userId, date: { gte: todayStart, lt: todayEnd } },
@@ -134,7 +143,8 @@ export class AttendanceService {
 
     // ── If there is an open session → this is a CHECK-OUT ──
     if (openSession) {
-      const minutesDiff = (now.getTime() - openSession.checkinTime.getTime()) / 60000;
+      const minutesDiff =
+        (now.getTime() - openSession.checkinTime.getTime()) / 60000;
       if (minutesDiff < 30) {
         const remaining = Math.ceil(30 - minutesDiff);
         throw new BadRequestException(
@@ -152,7 +162,9 @@ export class AttendanceService {
       });
       const totalMinutes = allSessions.reduce((sum, s) => {
         if (!s.checkoutTime) return sum;
-        return sum + (s.checkoutTime.getTime() - s.checkinTime.getTime()) / 60000;
+        return (
+          sum + (s.checkoutTime.getTime() - s.checkinTime.getTime()) / 60000
+        );
       }, 0);
       await this.prisma.attendance.update({
         where: { id: attendance!.id },
@@ -190,8 +202,8 @@ export class AttendanceService {
   // ─── Admin: Get today's attendance report for all employees ───────────────
 
   async getTodayAttendance(query: AttendanceQueryDto) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return this.getAllAttendance({ ...query, date: todayStr });
+    const { vnDate } = this.getVNTodayRange();
+    return this.getAllAttendance({ ...query, date: vnDate });
   }
 
   // ─── Employee: Get my attendance by month ─────────────────────────────────
@@ -201,8 +213,8 @@ export class AttendanceService {
     const month = query.month ?? now.getMonth() + 1;
     const year = query.year ?? now.getFullYear();
 
-    const from = new Date(year, month - 1, 1);          // First day of month
-    const to   = new Date(year, month, 1);               // First day of next month
+    const from = new Date(year, month - 1, 1); // First day of month
+    const to = new Date(year, month, 1); // First day of next month
 
     const records = await this.prisma.attendance.findMany({
       where: {
@@ -232,10 +244,8 @@ export class AttendanceService {
     }
 
     if (query.date) {
-      const start = new Date(query.date);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-      where.date = { gte: start, lt: end };
+      const { start, end } = this.getVNDateRange(query.date);
+      where.date = { gte: start, lte: end };
     }
 
     const [data, total] = await this.prisma.$transaction([
@@ -265,11 +275,30 @@ export class AttendanceService {
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  private formatTime(date: Date): string {
-    return date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
+  private formatTime(date: Date | null): string {
+    if (!date) return '--:--';
+    return dayjs(date).tz(VIETNAM_TIMEZONE).format('HH:mm');
+  }
+
+  private getVNDateRange(dateStr: string) {
+    const start = dayjs.tz(dateStr, VIETNAM_TIMEZONE).startOf('day').toDate();
+    const end = dayjs.tz(dateStr, VIETNAM_TIMEZONE).endOf('day').toDate();
+    return { start, end };
+  }
+
+  private getVNStartOfDay(dateStr?: string): Date {
+    const tz = VIETNAM_TIMEZONE;
+    if (dateStr) {
+      return dayjs.tz(dateStr, tz).startOf('day').toDate();
+    }
+    return dayjs.tz(dayjs(), tz).startOf('day').toDate();
+  }
+
+  private getVNTodayRange() {
+    const start = this.getVNStartOfDay();
+    const end = dayjs(start).add(1, 'day').toDate();
+    const vnDate = dayjs(start).tz(VIETNAM_TIMEZONE).format('YYYY-MM-DD');
+
+    return { start, end, vnDate };
   }
 }
