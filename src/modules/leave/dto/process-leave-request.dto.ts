@@ -10,7 +10,7 @@ import { LeaveStatus } from '@prisma/client';
 export class ProcessLeaveRequestDto {
   @IsNotEmpty()
   @IsEnum(LeaveStatus, {
-    message: 'status must be a valid LeaveStatus',
+    message: 'status must be PENDING, APPROVED, or REJECTED',
   })
   status!: LeaveStatus;
 
@@ -18,7 +18,7 @@ export class ProcessLeaveRequestDto {
   @IsNotEmpty({ message: 'rejectReason is required when status is REJECTED' })
   @IsString()
   @Matches(/\S/, {
-    message: 'rejectReason must not be empty',
+    message: 'rejectReason must not be empty or whitespace only',
   })
   rejectReason?: string;
 }

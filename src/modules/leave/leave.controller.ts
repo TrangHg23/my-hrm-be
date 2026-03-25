@@ -56,13 +56,18 @@ export class LeaveController {
   @Patch(':id/process')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  process(
+  async process(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() dto: ProcessLeaveRequestDto,
   ) {
     const adminId = (req as any).user.id;
-    return this.leaveService.processLeaveRequest(adminId, id, dto);
+    try {
+      return await this.leaveService.processLeaveRequest(adminId, id, dto);
+    } catch (error) {
+      console.error(`[LeaveController] Error processing request ${id}:`, error);
+      throw error;
+    }
   }
 
   @Delete(':id')

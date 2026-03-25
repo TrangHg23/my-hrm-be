@@ -182,28 +182,37 @@ export class LeaveService {
       });
     }
 
-    // 2. Atomic Update (Status Safety)
-    const result = await this.prisma.leaveRequest.updateMany({
-      where: { id, status: LeaveStatus.PENDING },
-      data: {
-        status: dto.status,
-        rejectReason: dto.rejectReason || null,
-        processedById: adminId,
-        processedAt: nowVN(),
-      } as any,
-    });
-
-    if (result.count === 0) {
+    // 2. Status Restriction
+    if (request.status !== LeaveStatus.PENDING) {
       throw new BadRequestException({
         error: 'ALREADY_PROCESSED',
-        message: 'Leave request has already been processed or does not exist',
+        message: `Leave request has already been ${request.status.toLowerCase()}`,
       });
     }
 
-    return this.prisma.leaveRequest.findUnique({
-      where: { id },
-      include: { processedBy: { select: { id: true, name: true } } },
-    });
+    try {
+      // 3. Execution
+      return await this.prisma.leaveRequest.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          rejectReason: dto.status === LeaveStatus.REJECTED ? (dto.rejectReason ?? null) : null,
+          processedById: adminId,
+          processedAt: nowVN(),
+        },
+        include: {
+          processedBy: { select: { id: true, name: true } },
+          user: { select: { id: true, name: true, email: true } },
+        },
+      });
+    } catch (error) {
+      // Handle Prisma potential crashes (e.g. Foreign Key)
+      console.error('[LeaveService] Prisma Update Error:', error);
+      throw new BadRequestException({
+        error: 'UPDATE_FAILED',
+        message: 'Failed to process leave request. Please check if admin exists.',
+      });
+    }
   }
 
   async cancelLeaveRequest(userId: string, id: string) {
