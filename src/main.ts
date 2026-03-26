@@ -12,7 +12,7 @@ async function bootstrap() {
     origin: 'http://localhost:3000',
   });
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionFilter());
 
   if (module.hot) {
