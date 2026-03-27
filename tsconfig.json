@@ -22,5 +22,13 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "prisma",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts"
+  ]
 }
