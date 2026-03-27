@@ -7,6 +7,10 @@ export const parseDateVN = (dateStr: string | Date): Date => {
   return new Date(`${dateStr}T00:00:00+07:00`);
 };
 
+export const combineDateTimeVN = (dateStr: string, timeStr: string): Date => {
+  return new Date(`${dateStr}T${timeStr}:00+07:00`);
+};
+
 export const formatDateVN = (date: Date): string => {
   return new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Ho_Chi_Minh',

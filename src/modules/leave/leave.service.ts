@@ -14,6 +14,7 @@ import {
   parseDateVN,
   formatDateVN,
   formatTimeToHHmm,
+  combineDateTimeVN,
 } from '../../global/utils/date.util';
 
 @Injectable()
@@ -51,7 +52,11 @@ export class LeaveService {
           message: 'startTime and endTime are required for partial-day leave',
         });
       }
-      if (this.normalizeTime(endTime) <= this.normalizeTime(startTime)) {
+
+      const startDateTime = combineDateTimeVN(fromDate, startTime);
+      const endDateTime = combineDateTimeVN(fromDate, endTime);
+
+      if (endDateTime <= startDateTime) {
         throw new BadRequestException({
           error: 'INVALID_TIME_RANGE',
           message: 'endTime must be after startTime',
@@ -90,8 +95,8 @@ export class LeaveService {
         fromDate: fromDateObj,
         toDate: toDateObj,
         isFullDay,
-        startTime: isFullDay ? null : (startTime ? this.parseTimeToDate(startTime) : null),
-        endTime: isFullDay ? null : (endTime ? this.parseTimeToDate(endTime) : null),
+        startTime: isFullDay ? null : combineDateTimeVN(fromDate, startTime!),
+        endTime: isFullDay ? null : combineDateTimeVN(fromDate, endTime!),
         reason,
         status: LeaveStatus.PENDING,
       },
@@ -273,32 +278,16 @@ export class LeaveService {
     const exFromStr = formatDateVN(existing.fromDate);
 
     if (reqFromStr === exFromStr) {
-      const startA = this.normalizeTime(dto.startTime!);
-      const endA = this.normalizeTime(dto.endTime!);
+      // Both are partial-day on same date: check timestamp overlap
+      const startA = combineDateTimeVN(dto.fromDate, dto.startTime!).getTime();
+      const endA = combineDateTimeVN(dto.fromDate, dto.endTime!).getTime();
 
-      const startB = this.normalizeTime(formatTimeToHHmm(existing.startTime));
-      const endB = this.normalizeTime(formatTimeToHHmm(existing.endTime));
+      const startB = existing.startTime.getTime();
+      const endB = existing.endTime.getTime();
 
-      // Overlap if max(start1, start2) < min(end1, end2)
       return startA < endB && endA > startB;
     }
 
     return false;
-  }
-
-  private normalizeTime(time: string): number {
-    const [h, m] = time.split(':').map(Number);
-    return h * 60 + m;
-  }
-
-  /**
-   * Refined Time Parsing
-   * Uses parseDateVN('1970-01-01') as safe base.
-   */
-  private parseTimeToDate(timeStr: string): Date {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = parseDateVN('1970-01-01');
-    date.setHours(hours, minutes, 0, 0);
-    return date;
   }
 }
