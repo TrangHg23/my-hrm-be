@@ -56,8 +56,8 @@ model LeaveRequest {
   fromDate  DateTime    @map("from_date") @db.Date
   toDate    DateTime    @map("to_date") @db.Date
 
-  startTime DateTime?   @map("start_time") @db.Timestamptz
-  endTime   DateTime?   @map("end_time") @db.Timestamptz
+  startTime String?    @map("start_time")
+  endTime   String?    @map("end_time")
 
   isFullDay Boolean     @default(true) @map("is_full_day")
   reason    String?

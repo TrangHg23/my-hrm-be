@@ -13,8 +13,6 @@ import {
   nowVN,
   parseDateVN,
   formatDateVN,
-  formatTimeToHHmm,
-  combineDateTimeVN,
 } from '../../global/utils/date.util';
 
 @Injectable()
@@ -53,10 +51,8 @@ export class LeaveService {
         });
       }
 
-      const startDateTime = combineDateTimeVN(fromDate, startTime);
-      const endDateTime = combineDateTimeVN(fromDate, endTime);
-
-      if (endDateTime <= startDateTime) {
+      // Simple string comparison works for HH:mm format
+      if (endTime! <= startTime!) {
         throw new BadRequestException({
           error: 'INVALID_TIME_RANGE',
           message: 'endTime must be after startTime',
@@ -95,8 +91,8 @@ export class LeaveService {
         fromDate: fromDateObj,
         toDate: toDateObj,
         isFullDay,
-        startTime: isFullDay ? null : combineDateTimeVN(fromDate, startTime!),
-        endTime: isFullDay ? null : combineDateTimeVN(fromDate, endTime!),
+        startTime: isFullDay ? null : startTime!,
+        endTime: isFullDay ? null : endTime!,
         reason,
         status: LeaveStatus.PENDING,
       },
@@ -278,12 +274,11 @@ export class LeaveService {
     const exFromStr = formatDateVN(existing.fromDate);
 
     if (reqFromStr === exFromStr) {
-      // Both are partial-day on same date: check timestamp overlap
-      const startA = combineDateTimeVN(dto.fromDate, dto.startTime!).getTime();
-      const endA = combineDateTimeVN(dto.fromDate, dto.endTime!).getTime();
-
-      const startB = existing.startTime.getTime();
-      const endB = existing.endTime.getTime();
+      // Both are partial-day on same date: compare HH:mm strings directly
+      const startA = dto.startTime!;
+      const endA = dto.endTime!;
+      const startB = existing.startTime as string;
+      const endB = existing.endTime as string;
 
       return startA < endB && endA > startB;
     }

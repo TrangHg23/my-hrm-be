@@ -4,7 +4,10 @@ export const nowVN = (): Date => {
 
 export const parseDateVN = (dateStr: string | Date): Date => {
   if (dateStr instanceof Date) return dateStr;
-  return new Date(`${dateStr}T00:00:00+07:00`);
+  // Use UTC midnight so that PostgreSQL @db.Date columns preserve the correct date.
+  // Previously used +07:00 offset, which caused the date to shift back 1 day
+  // when Prisma/PostgreSQL truncates to the UTC date portion.
+  return new Date(`${dateStr}T00:00:00Z`);
 };
 
 export const combineDateTimeVN = (dateStr: string, timeStr: string): Date => {

@@ -3,7 +3,7 @@ import { LeaveService } from './leave.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { LeaveStatus } from '@prisma/client';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { parseDateVN, combineDateTimeVN } from '../../global/utils/date.util';
+import { parseDateVN } from '../../global/utils/date.util';
 
 describe('LeaveService', () => {
   let service: LeaveService;
@@ -80,8 +80,8 @@ describe('LeaveService', () => {
 
       expect(mockPrisma.leaveRequest.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          startTime: expect.any(Date),
-          endTime: expect.any(Date),
+          startTime: '09:00',
+          endTime: '12:00',
         }),
       });
     });
@@ -173,8 +173,8 @@ describe('LeaveService', () => {
         fromDate: parseDateVN(dateStr),
         toDate: parseDateVN(dateStr),
         isFullDay: false,
-        startTime: combineDateTimeVN(dateStr, '10:00'),
-        endTime: combineDateTimeVN(dateStr, '14:00'),
+        startTime: '10:00',
+        endTime: '14:00',
       };
 
       const dto = {
@@ -198,8 +198,8 @@ describe('LeaveService', () => {
         fromDate: parseDateVN(dateStr),
         toDate: parseDateVN(dateStr),
         isFullDay: false,
-        startTime: combineDateTimeVN(dateStr, '09:00'),
-        endTime: combineDateTimeVN(dateStr, '11:00'),
+        startTime: '09:00',
+        endTime: '11:00',
       };
 
       const dto = {
