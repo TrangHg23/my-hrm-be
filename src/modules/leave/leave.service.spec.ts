@@ -80,8 +80,8 @@ describe('LeaveService', () => {
 
       expect(mockPrisma.leaveRequest.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          startTime: expect.any(Date),
-          endTime: expect.any(Date),
+          startTime: '09:00',
+          endTime: '12:00',
         }),
       });
     });
@@ -168,15 +168,14 @@ describe('LeaveService', () => {
     });
 
     it('should detect partial-day vs partial-day overlap (overlapping time)', async () => {
+      const dateStr = '2026-04-01';
       const existing = {
-        fromDate: parseDateVN('2026-04-01'),
-        toDate: parseDateVN('2026-04-01'),
+        fromDate: parseDateVN(dateStr),
+        toDate: parseDateVN(dateStr),
         isFullDay: false,
-        startTime: parseDateVN('1970-01-01'), 
-        endTime: parseDateVN('1970-01-01'),
+        startTime: '10:00',
+        endTime: '14:00',
       };
-      existing.startTime.setHours(10, 0);
-      existing.endTime.setHours(14, 0);
 
       const dto = {
         fromDate: '2026-04-01',
@@ -194,15 +193,14 @@ describe('LeaveService', () => {
     });
 
     it('should pass partial-day vs partial-day (non-overlapping time)', async () => {
+      const dateStr = '2026-04-01';
       const existing = {
-        fromDate: parseDateVN('2026-04-01'),
-        toDate: parseDateVN('2026-04-01'),
+        fromDate: parseDateVN(dateStr),
+        toDate: parseDateVN(dateStr),
         isFullDay: false,
-        startTime: parseDateVN('1970-01-01'),
-        endTime: parseDateVN('1970-01-01'),
+        startTime: '09:00',
+        endTime: '11:00',
       };
-      existing.startTime.setHours(9, 0);
-      existing.endTime.setHours(11, 0);
 
       const dto = {
         fromDate: '2026-04-01',
