@@ -26,6 +26,8 @@ export class LeaveService {
   async createLeaveRequest(userId: string, dto: CreateLeaveRequestDto) {
     const { fromDate, toDate, isFullDay, startTime, endTime, reason } = dto;
 
+    console.log(`[LeaveService] Creating request for user ${userId}:`, { fromDate, toDate, isFullDay });
+
     const fromDateObj = parseDateVN(fromDate);
     const toDateObj = parseDateVN(toDate);
 
@@ -85,8 +87,8 @@ export class LeaveService {
     }
 
     // 3. Create Request
-    return this.prisma.leaveRequest.create({
-      data: {
+    try {
+      const data = {
         userId,
         fromDate: fromDateObj,
         toDate: toDateObj,
@@ -95,8 +97,18 @@ export class LeaveService {
         endTime: isFullDay ? null : endTime!,
         reason,
         status: LeaveStatus.PENDING,
-      },
-    });
+      };
+
+      console.log(`[LeaveService] Prisma Create Data:`, data);
+      
+      return await this.prisma.leaveRequest.create({
+        data,
+      });
+    } catch (error) {
+      console.error('[LeaveService] Prisma Create Error:', error);
+      // Let it throw to be caught by the global filter, but now we have the context
+      throw error;
+    }
   }
 
   async getMyLeaveRequests(userId: string, query: LeaveQueryDto) {
@@ -109,6 +121,12 @@ export class LeaveService {
    */
   async getLeaveRequests(query: LeaveQueryDto) {
     const { status, userId, fromDate, toDate, page = 1, limit = 10 } = query;
+
+    console.log(`[LeaveService] getLeaveRequests - params:`, { status, userId, fromDate, toDate, page, limit });
+    console.log(`[LeaveService] getLeaveRequests - parameter types:`, {
+      page: typeof page,
+      limit: typeof limit,
+    });
 
     const safeLimit = Math.min(limit, 50);
     const skip = (page - 1) * safeLimit;
@@ -123,29 +141,36 @@ export class LeaveService {
       if (toDate) where.fromDate = { lte: parseDateVN(toDate) };
     }
 
-    const [data, total] = await this.prisma.$transaction([
-      this.prisma.leaveRequest.findMany({
-        where,
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          processedBy: { select: { id: true, name: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: safeLimit,
-      }),
-      this.prisma.leaveRequest.count({ where }),
-    ]);
+    console.log(`[LeaveService] getLeaveRequests - where clause:`, JSON.stringify(where, null, 2));
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit: safeLimit,
-        totalPages: Math.ceil(total / safeLimit),
-      },
-    };
+    try {
+      const [data, total] = await this.prisma.$transaction([
+        this.prisma.leaveRequest.findMany({
+          where,
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            processedBy: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: safeLimit,
+        }),
+        this.prisma.leaveRequest.count({ where }),
+      ]);
+
+      return {
+        data,
+        meta: {
+          total,
+          page,
+          limit: safeLimit,
+          totalPages: Math.ceil(total / safeLimit),
+        },
+      };
+    } catch (error) {
+      console.error('[LeaveService] Prisma Query Error:', error);
+      throw error;
+    }
   }
 
   async getPendingCount() {
