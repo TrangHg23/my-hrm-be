@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { SearchEmployeeDto } from './dto/search-employee.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
@@ -68,20 +69,30 @@ export class UsersService {
     return updated;
   }
 
-  async getEmployees(query: PaginationQueryDto) {
+  async getEmployees(query: SearchEmployeeDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
+    const q = query.q;
     const skip = (page - 1) * limit;
+
+    const where: any = { role: 'EMPLOYEE' };
+
+    if (q) {
+      where.name = {
+        contains: q,
+        mode: 'insensitive',
+      };
+    }
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
-        where: { role: 'EMPLOYEE' },
+        where,
         omit: { password: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.user.count({ where: { role: 'EMPLOYEE' } }),
+      this.prisma.user.count({ where }),
     ]);
 
     return {
