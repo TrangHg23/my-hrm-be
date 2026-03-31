@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: my-hrm-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      POSTGRES_DB: ${POSTGRES_DB:-my_hrm}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-my_hrm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: 
+      context: .
+      args:
+        # Build-time dummy DATABASE_URL if needed
+        DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-123456}@db:5432/${POSTGRES_DB:-my_hrm}"
+    container_name: my-hrm-app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      # Real runtime DATABASE_URL using Docker service name
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-123456}@db:5432/${POSTGRES_DB:-my_hrm}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3000
+      FRONTEND_URL: ${FRONTEND_URL}
+
+volumes:
+  db_data:
