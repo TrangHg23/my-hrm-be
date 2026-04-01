@@ -30,6 +30,7 @@ model User {
   role      Role     @default(EMPLOYEE)
   name      String
   phone     String?
+  empCode   String?  @unique @map("emp_code") @db.VarChar(10)
 
   creatorId String?  @map("creator_id")
   createdAt DateTime @default(now()) @map("created_at")

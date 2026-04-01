@@ -17,6 +17,7 @@ import { Roles } from '../../global/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { SearchEmployeeDto } from './dto/search-employee.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
@@ -49,7 +50,7 @@ export class UsersController {
   @Get('employees')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  getEmployees(@Query() query: PaginationQueryDto) {
+  getEmployees(@Query() query: SearchEmployeeDto) {
     return this.usersService.getEmployees(query);
   }
   @Get('employees/:id')
