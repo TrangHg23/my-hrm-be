@@ -11,6 +11,10 @@ export class AttendanceQueryDto {
   date?: string; // YYYY-MM-DD
 
   @IsOptional()
+  @IsString()
+  q?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
