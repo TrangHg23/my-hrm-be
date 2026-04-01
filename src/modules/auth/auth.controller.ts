@@ -11,16 +11,17 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto);
     
-    const isProd = process.env.NODE_ENV === 'production';
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
     
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
