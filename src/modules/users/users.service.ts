@@ -100,14 +100,18 @@ export class UsersService {
     const q = query.q;
     const skip = (page - 1) * limit;
 
-    const where: any = { role: 'EMPLOYEE' };
-
-    if (q) {
-      where.name = {
-        contains: q,
-        mode: 'insensitive',
-      };
-    }
+    const where: any = {
+      role: 'EMPLOYEE',
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' } },
+              { email: { contains: q, mode: 'insensitive' } },
+              { empCode: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
