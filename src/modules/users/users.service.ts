@@ -185,8 +185,13 @@ export class UsersService {
     }
 
     if (currentEmployee.status === 'RESIGNED') {
+      if (dto.status && dto.status !== 'RESIGNED') {
+        throw new BadRequestException(
+          'Không thể thay đổi trạng thái của nhân viên đã nghỉ việc.',
+        );
+      }
       throw new BadRequestException(
-        'Cannot update an employee who has already resigned.',
+        'Không thể cập nhật thông tin của nhân viên đã nghỉ việc.',
       );
     }
 
@@ -241,7 +246,7 @@ export class UsersService {
 
     if (user.status === 'RESIGNED') {
       throw new BadRequestException(
-        'Cannot reactivate an account of an employee who has resigned.',
+        'Không thể kích hoạt lại tài khoản của nhân viên đã nghỉ việc.',
       );
     }
 

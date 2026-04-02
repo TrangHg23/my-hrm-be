@@ -24,19 +24,19 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Thông tin đăng nhập không hợp lệ');
     }
 
     if (user.isActive === false) {
       throw new ForbiddenException(
-        'Account is disabled. Please contact your administrator.',
+        'Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.',
       );
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.password);
 
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Thông tin đăng nhập không hợp lệ');
     }
 
     const payload = {
