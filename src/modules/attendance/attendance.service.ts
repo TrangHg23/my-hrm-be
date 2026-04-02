@@ -248,12 +248,22 @@ export class AttendanceService {
       where.date = { gte: start, lte: end };
     }
 
+    if (query.q) {
+      where.user = {
+        OR: [
+          { name: { contains: query.q, mode: 'insensitive' } },
+          { email: { contains: query.q, mode: 'insensitive' } },
+          { empCode: { contains: query.q, mode: 'insensitive' } },
+        ],
+      };
+    }
+
     const [data, total] = await this.prisma.$transaction([
       this.prisma.attendance.findMany({
         where,
         include: {
           sessions: { orderBy: { checkinTime: 'asc' } },
-          user: { select: { id: true, name: true, email: true } },
+          user: { select: { id: true, name: true, email: true, empCode: true } },
         },
         orderBy: { date: 'desc' },
         skip,
