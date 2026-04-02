@@ -16,6 +16,7 @@ import { RolesGuard } from '../../global/guards/roles.guard';
 import { Roles } from '../../global/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { SearchEmployeeDto } from './dto/search-employee.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -39,12 +40,22 @@ export class UsersController {
     return this.usersService.updateMe(userId, dto);
   }
 
+  @Post('admins')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  createAdmin(@Req() req: Request, @Body() dto: CreateAdminDto) {
+    const adminId = (req as any).user.id;
+    return this.usersService.createUser(adminId, dto);
+  }
+
   @Post('employees')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   createEmployee(@Req() req: Request, @Body() dto: CreateEmployeeDto) {
     const adminId = (req as any).user.id;
-    return this.usersService.createEmployee(adminId, dto);
+    // ensure role is EMPLOYEE if not provided
+    if (!dto.role) dto.role = Role.EMPLOYEE;
+    return this.usersService.createUser(adminId, dto);
   }
 
   @Get('employees')
@@ -65,5 +76,12 @@ export class UsersController {
   @Roles(Role.ADMIN)
   updateEmployee(@Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
     return this.usersService.updateEmployee(id, dto);
+  }
+
+  @Patch('employees/:id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  toggleEmployeeActive(@Param('id') id: string) {
+    return this.usersService.toggleEmployeeActive(id);
   }
 }
