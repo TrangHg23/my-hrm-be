@@ -1,15 +1,21 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private usersService: UsersService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -19,6 +25,12 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.isActive === false) {
+      throw new ForbiddenException(
+        'Account is disabled. Please contact your administrator.',
+      );
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.password);
@@ -34,10 +46,8 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(payload);
 
-    const { password: _, ...userWithoutPassword } = user;
-
     return {
-      user: userWithoutPassword,
+      user: this.usersService.sanitizeUserResponse(user),
       accessToken,
     };
   }

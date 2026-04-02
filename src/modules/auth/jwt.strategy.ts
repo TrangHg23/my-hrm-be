@@ -27,6 +27,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('Token has been invalidated');
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.role === 'EMPLOYEE' && user.isActive === false) {
+      throw new UnauthorizedException('Your account has been deactivated.');
+    }
+
     return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }
