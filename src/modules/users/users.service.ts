@@ -195,20 +195,11 @@ export class UsersService {
       );
     }
 
-    const { password, empCode, role, ...rest } = dto as any;
+    const { password, email, empCode, role, ...rest } = dto as any;
     const data: Record<string, any> = { ...rest };
 
     if (password) {
       data.password = await bcrypt.hash(password, 10);
-    }
-
-    if (rest.email) {
-      const existing = await this.prisma.user.findUnique({
-        where: { email: rest.email },
-      });
-      if (existing && existing.id !== employeeId) {
-        throw new ConflictException('Email already exists');
-      }
     }
 
     if (data.status === 'RESIGNED') {
